@@ -352,15 +352,15 @@
     font-weight: 400;
   }
 
-  .action-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .action-row {
+    display: flex;
     gap: 8px;
-    margin-top: 8px;
+    margin-top: auto;
+    padding-top: 20px;
     padding-bottom: 32px;
   }
-  .action-grid .btn-secondary { font-size: 13px; padding: 13px; }
-  .action-grid .btn-primary { margin-bottom: 0; font-size: 13px; padding: 13px; }
+  .action-row .btn-secondary { flex: 1; font-size: 13px; padding: 13px; }
+  .action-row .btn-primary { flex: 1; margin-bottom: 0; font-size: 13px; padding: 13px; }
 
   /* ── RANKING ── */
   .ranking-body { padding: 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -436,17 +436,12 @@
         <div class="winner-name" id="my-winner-name"></div>
       </div>
 
-      <div class="section-label">내 투표 점수</div>
-      <ul class="rank-list" id="my-rank-list"></ul>
-
-      <div class="section-label">전체 집계 순위</div>
+      <div class="section-label">다른 사람들의 선택</div>
       <div id="global-rank-area"><div class="loading-text">집계 불러오는 중…</div></div>
 
-      <div class="action-grid">
+      <div class="action-row">
         <button class="btn-secondary" onclick="goIntro()">처음으로</button>
-        <button class="btn-secondary" onclick="retry()">다시 투표</button>
-        <button class="btn-secondary" onclick="loadGlobal()">순위 새로고침</button>
-        <button class="btn-primary" onclick="goToRanking()">전체 순위</button>
+        <button class="btn-primary" onclick="retry()">다시 투표</button>
       </div>
     </div>
   </div>
@@ -500,7 +495,7 @@ const CANDIDATES = [
 
 const ROUND_NAMES = {32:"32강", 16:"16강", 8:"8강", 4:"준결승", 2:"결승"};
 let currentRound=[], nextRound=[], matchIdx=0;
-let totalMatches=31, doneMatches=0, roundSize=32, scores={};
+let totalMatches=31, doneMatches=0, roundSize=32;
 
 function shuffle(arr){
   const a=[...arr];
@@ -516,8 +511,6 @@ function goIntro(){ show("screen-intro"); }
 function goToRanking(){ show("screen-ranking"); loadRankingOnly(); }
 
 function startGame(){
-  scores={};
-  CANDIDATES.filter(c=>!c.isBye).forEach(c=>{scores[c.name]=0;});
   const pool=shuffle([...CANDIDATES]);
   currentRound=[];
   for(let i=0;i<pool.length;i+=2) currentRound.push([pool[i],pool[i+1]]);
@@ -555,7 +548,6 @@ function pick(side){
   const winner=side===0?a:b;
   if(!winner||winner.isBye)return;
   document.getElementById("card-"+(side===0?"a":"b")).classList.add("selected");
-  scores[winner.name]=(scores[winner.name]||0)+roundSize/2;
   nextRound.push(winner);
   matchIdx++; doneMatches++;
   setTimeout(advanceRound,200);
@@ -575,28 +567,14 @@ function advanceRound(){
 
 function showResult(winner){
   show("screen-result");
-  if(!winner.isBye) scores[winner.name]=(scores[winner.name]||0)+16;
   document.getElementById("my-winner-name").textContent=winner.name;
-  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-  const maxS=sorted[0]?.[1]||1;
-  let html="";
-  sorted.slice(0,10).forEach(([name,score],i)=>{
-    const pct=Math.round(score/maxS*100);
-    html+=`<li class="rank-item">
-      <span class="rank-num${i<3?' top':''}">${i+1}</span>
-      <span class="rank-name">${name}</span>
-      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
-      <span class="rank-score">${score}</span>
-    </li>`;
-  });
-  document.getElementById("my-rank-list").innerHTML=html;
-  submitScores(scores);
+  submitWinner(winner.name);
   loadGlobal();
 }
 
-async function submitScores(sc){
+async function submitWinner(name){
   try{
-    await fetch(GAS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({scores:Object.entries(sc).map(([name,score])=>({name,score}))})});
+    await fetch(GAS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({winner:name})});
   }catch(e){}
 }
 
@@ -605,19 +583,22 @@ async function fetchRankHtml(){
     const res=await fetch(GAS_URL+"?t="+Date.now());
     const data=await res.json();
     if(!data||!data.length)return'<div class="loading-text">아직 집계 데이터가 없습니다</div>';
-    const sorted=[...data].sort((a,b)=>b.score-a.score);
-    const maxS=sorted[0]?.score||1;
+    const sorted=[...data].sort((a,b)=>b.count-a.count);
+    const maxC=sorted[0]?.count||1;
+    const total=sorted.reduce((s,d)=>s+d.count,0);
     let html='<ul class="rank-list">';
     sorted.forEach((item,i)=>{
-      const pct=Math.round(item.score/maxS*100);
+      const pct=Math.round(item.count/maxC*100);
+      const votePct=Math.round(item.count/total*100);
       html+=`<li class="rank-item">
         <span class="rank-num${i<3?' top':''}">${i+1}</span>
         <span class="rank-name">${item.name}</span>
         <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
-        <span class="rank-score">${Number(item.score).toLocaleString()}</span>
+        <span class="rank-score">${item.count}표 (${votePct}%)</span>
       </li>`;
     });
-    return html+'</ul>';
+    html+=`</ul><div style="text-align:center;font-size:12px;color:var(--gray);margin-top:12px;">총 ${total}명 참여</div>`;
+    return html;
   }catch(e){return'<div class="loading-text">불러오기 실패. 새로고침을 눌러주세요.</div>';}
 }
 

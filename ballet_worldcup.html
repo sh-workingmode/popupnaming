@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>발레 팝업 이름 월드컵</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F5F5;
+    --white: #FFFFFF;
+    --black: #111111;
+    --gray: #999999;
+    --mid-gray: #666666;
+    --border: #E0E0E0;
+    --accent: #111111;
+    --accent-bg: #F0F0F0;
+    --pink: #FF4D6D;
+    --pink-light: #FFF0F3;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--black);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--white);
+    z-index: 10;
+  }
+  .top-bar-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--black);
+  }
+  .top-bar-sub {
+    font-size: 12px;
+    color: var(--gray);
+    font-weight: 400;
+  }
+
+  /* SCREENS */
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── INTRO ── */
+  .intro-body { padding: 28px 20px; flex: 1; display: flex; flex-direction: column; }
+  .intro-headline {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.5px;
+    color: var(--black);
+    margin-bottom: 10px;
+  }
+  .intro-headline span { color: var(--pink); }
+  .intro-desc {
+    font-size: 14px;
+    color: var(--mid-gray);
+    line-height: 1.7;
+    margin-bottom: 28px;
+    font-weight: 400;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--bg);
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--black);
+    display: block;
+    letter-spacing: -0.5px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 3px;
+    display: block;
+    font-weight: 400;
+  }
+
+  .btn-primary {
+    display: block;
+    width: 100%;
+    padding: 17px;
+    background: var(--black);
+    color: var(--white);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 10px;
+    transition: opacity 0.15s;
+    font-family: inherit;
+  }
+  .btn-primary:active { opacity: 0.8; }
+
+  .btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    background: var(--bg);
+    color: var(--black);
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+    font-family: inherit;
+  }
+  .btn-secondary:active { background: #E8E8E8; }
+
+  /* ── BATTLE ── */
+  .battle-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .round-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .round-badge {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--black);
+    background: var(--bg);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .match-count {
+    font-size: 12px;
+    color: var(--gray);
+    font-weight: 400;
+  }
+  .progress-track {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 3px;
+    background: var(--pink);
+    border-radius: 2px;
+    transition: width 0.35s ease;
+  }
+
+  .battle-body {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .choice-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    position: relative;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .choice-card:active {
+    transform: scale(0.98);
+    background: var(--bg);
+  }
+  .choice-card.hover {
+    border-color: var(--black);
+    background: var(--accent-bg);
+  }
+  .choice-card.selected {
+    border-color: var(--pink);
+    background: var(--pink-light);
+  }
+  .choice-card.selected .card-name { color: var(--pink); }
+
+  .card-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--black);
+    line-height: 1.35;
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+    padding-right: 28px;
+  }
+  .card-note {
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .card-chevron {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: var(--border);
+    font-weight: 300;
+    line-height: 1;
+  }
+  .choice-card.selected .card-chevron { color: var(--pink); }
+
+  .vs-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+    gap: 12px;
+  }
+  .vs-line { flex: 1; height: 1px; background: var(--border); }
+  .vs-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray);
+    letter-spacing: 2px;
+  }
+
+  /* ── RESULT ── */
+  .result-body { padding: 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  .winner-box {
+    background: var(--black);
+    border-radius: 16px;
+    padding: 24px 20px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .winner-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .winner-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.3;
+    letter-spacing: -0.3px;
+  }
+  .trophy { font-size: 28px; margin-bottom: 8px; display: block; }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gray);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  .rank-list { list-style: none; margin-bottom: 28px; }
+  .rank-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .rank-num {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gray);
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .rank-num.top { color: var(--pink); }
+  .rank-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--black);
+    flex: 1;
+    line-height: 1.4;
+    letter-spacing: -0.2px;
+  }
+  .rank-bar-wrap {
+    width: 60px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .rank-bar { height: 3px; background: var(--pink); border-radius: 2px; }
+  .rank-score {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gray);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .loading-text {
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray);
+    padding: 28px 0;
+    font-weight: 400;
+  }
+
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+    padding-bottom: 32px;
+  }
+  .action-grid .btn-secondary { font-size: 13px; padding: 13px; }
+  .action-grid .btn-primary { margin-bottom: 0; font-size: 13px; padding: 13px; }
+
+  /* ── RANKING ── */
+  .ranking-body { padding: 20px; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* safe area */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .intro-body, .result-body, .ranking-body { padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div>
+      <div class="top-bar-title">발레 팝업 이름 월드컵</div>
+      <div class="top-bar-sub">Ballet Popup Naming Vote</div>
+    </div>
+  </div>
+
+  <!-- INTRO -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-body">
+      <div class="intro-headline">당신이 선택하는<br>발레 팝업의 <span>이름</span></div>
+      <div class="intro-desc">29개 후보 명칭 중 마음에 드는 이름을 골라주세요.<br>1:1 토너먼트로 최종 우승자를 뽑아요.</div>
+      <div class="stats-grid">
+        <div class="stat-card"><span class="stat-num">29</span><span class="stat-label">후보</span></div>
+        <div class="stat-card"><span class="stat-num">32강</span><span class="stat-label">토너먼트</span></div>
+        <div class="stat-card"><span class="stat-num">31</span><span class="stat-label">총 매치</span></div>
+      </div>
+      <button class="btn-primary" onclick="startGame()">투표 시작하기</button>
+      <button class="btn-secondary" onclick="goToRanking()">전체 집계 순위 보기</button>
+    </div>
+  </div>
+
+  <!-- BATTLE -->
+  <div id="screen-battle" class="screen">
+    <div class="battle-header">
+      <div class="round-row">
+        <div class="round-badge" id="round-name">32강</div>
+        <div class="match-count" id="match-info">1 / 16</div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="battle-body">
+      <div class="choice-card" id="card-a" onclick="pick(0)">
+        <div class="card-name" id="name-a"></div>
+        <div class="card-note" id="note-a"></div>
+        <span class="card-chevron">›</span>
+      </div>
+      <div class="vs-row">
+        <div class="vs-line"></div>
+        <div class="vs-text">VS</div>
+        <div class="vs-line"></div>
+      </div>
+      <div class="choice-card" id="card-b" onclick="pick(1)">
+        <div class="card-name" id="name-b"></div>
+        <div class="card-note" id="note-b"></div>
+        <span class="card-chevron">›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result" class="screen">
+    <div class="result-body">
+      <div class="winner-box">
+        <span class="trophy">🏆</span>
+        <div class="winner-label">내가 선택한 최고의 이름</div>
+        <div class="winner-name" id="my-winner-name"></div>
+      </div>
+
+      <div class="section-label">내 투표 점수</div>
+      <ul class="rank-list" id="my-rank-list"></ul>
+
+      <div class="section-label">전체 집계 순위</div>
+      <div id="global-rank-area"><div class="loading-text">집계 불러오는 중…</div></div>
+
+      <div class="action-grid">
+        <button class="btn-secondary" onclick="goIntro()">처음으로</button>
+        <button class="btn-secondary" onclick="retry()">다시 투표</button>
+        <button class="btn-secondary" onclick="loadGlobal()">순위 새로고침</button>
+        <button class="btn-primary" onclick="goToRanking()">전체 순위</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANKING ONLY -->
+  <div id="screen-ranking" class="screen">
+    <div class="ranking-body">
+      <div class="section-label" style="margin-bottom:16px;">전체 집계 순위</div>
+      <div id="ranking-only-area"><div class="loading-text">집계 불러오는 중…</div></div>
+      <button class="btn-primary" style="margin-top:20px;" onclick="startGame()">투표하기</button>
+      <button class="btn-secondary" style="margin-top:8px;" onclick="loadRankingOnly()">새로고침</button>
+      <div style="height:32px;"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzKLtozAtCWPxcjp06Z2-24bdB3YgqoZVFy7AxMXYhKPz_O93FsYrbwuRLCIFTxe_JQ-g/exec";
+
+const CANDIDATES = [
+  {name:"ballet society", note:""},
+  {name:"backstage ballet", note:""},
+  {name:"발레뜨망", note:"발레광·발레매니아 라는 뜻"},
+  {name:"BALLET SÉOUL", note:""},
+  {name:"발레가 세상을 구한다", note:""},
+  {name:"Ballerina's Atelier", note:""},
+  {name:"아뜰리에 바르 (Atelier Barre)", note:""},
+  {name:"Corps de Ballet", note:"'함께하는 몸들' — 발레 군무단에서 차용"},
+  {name:"Ballet, First Position in Seoul", note:"지역명만 바꿔 다른 곳에도 활용 가능"},
+  {name:"살롱 드 발레 (Salon de Ballet)", note:""},
+  {name:"FIRST POSITION, ALWAYS", note:"발레를 향한 변하지 않는 마음"},
+  {name:"더 발레 아틀리에 (The Ballet Atelier)", note:""},
+  {name:"FIRST POSITION", note:"모든 발레의 시작 자세 — 커뮤니티의 첫 번째 거점"},
+  {name:"Salon de Ballet", note:""},
+  {name:"Ballet Archive", note:""},
+  {name:"The Ballet Club", note:""},
+  {name:"발사모", note:"발레를 사랑하는 사람들의 모임"},
+  {name:"더 뮤즈", note:""},
+  {name:"A luminous elegance, full of life", note:""},
+  {name:"BALLET THEATRE SEOUL", note:"또는 BALLET THEATRE THEHYUNDAI"},
+  {name:"더 발레 소셜룸", note:""},
+  {name:"더 발레 살롱", note:""},
+  {name:"발레로그", note:"Log — 발레 기록의 의미"},
+  {name:"발레 아틀리에", note:""},
+  {name:"발레 라운지", note:""},
+  {name:"발레크로젯", note:"발레리나의 옷장을 옮겨온 듯한 느낌"},
+  {name:"발레 소셜 룸", note:""},
+  {name:"I ❤️ BALLET", note:""},
+  {name:"__BYE__", note:"", isBye:true}
+];
+
+const ROUND_NAMES = {32:"32강", 16:"16강", 8:"8강", 4:"준결승", 2:"결승"};
+let currentRound=[], nextRound=[], matchIdx=0;
+let totalMatches=31, doneMatches=0, roundSize=32, scores={};
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+function goIntro(){ show("screen-intro"); }
+function goToRanking(){ show("screen-ranking"); loadRankingOnly(); }
+
+function startGame(){
+  scores={};
+  CANDIDATES.filter(c=>!c.isBye).forEach(c=>{scores[c.name]=0;});
+  const pool=shuffle([...CANDIDATES]);
+  currentRound=[];
+  for(let i=0;i<pool.length;i+=2) currentRound.push([pool[i],pool[i+1]]);
+  nextRound=[]; matchIdx=0; roundSize=32; totalMatches=31; doneMatches=0;
+  show("screen-battle");
+  renderMatch();
+}
+
+function renderMatch(){
+  const [a,b]=currentRound[matchIdx];
+  if(a.isBye){autoPick(1);return;}
+  if(b&&b.isBye){autoPick(0);return;}
+  if(!b){autoPick(0);return;}
+
+  document.getElementById("round-name").textContent=ROUND_NAMES[roundSize]||roundSize+"강";
+  document.getElementById("match-info").textContent=(matchIdx+1)+" / "+currentRound.length;
+  document.getElementById("progress-fill").style.width=Math.round(doneMatches/totalMatches*100)+"%";
+  document.getElementById("name-a").textContent=a.name;
+  document.getElementById("note-a").textContent=a.note||"";
+  document.getElementById("name-b").textContent=b.name;
+  document.getElementById("note-b").textContent=b.note||"";
+  document.getElementById("card-a").className="choice-card";
+  document.getElementById("card-b").className="choice-card";
+}
+
+function autoPick(side){
+  const [a,b]=currentRound[matchIdx];
+  nextRound.push(side===0?a:(b||a));
+  matchIdx++; doneMatches++;
+  advanceRound();
+}
+
+function pick(side){
+  const [a,b]=currentRound[matchIdx];
+  const winner=side===0?a:b;
+  if(!winner||winner.isBye)return;
+  document.getElementById("card-"+(side===0?"a":"b")).classList.add("selected");
+  scores[winner.name]=(scores[winner.name]||0)+roundSize/2;
+  nextRound.push(winner);
+  matchIdx++; doneMatches++;
+  setTimeout(advanceRound,200);
+}
+
+function advanceRound(){
+  if(matchIdx>=currentRound.length){
+    if(nextRound.length===1){showResult(nextRound[0]);return;}
+    currentRound=[];
+    for(let i=0;i<nextRound.length;i+=2){
+      currentRound.push(nextRound[i+1]?[nextRound[i],nextRound[i+1]]:[nextRound[i],{name:"__BYE__",isBye:true}]);
+    }
+    nextRound=[]; matchIdx=0; roundSize=Math.round(roundSize/2);
+  }
+  renderMatch();
+}
+
+function showResult(winner){
+  show("screen-result");
+  document.getElementById("my-winner-name").textContent=winner.name;
+  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const maxS=sorted[0]?.[1]||1;
+  let html="";
+  sorted.slice(0,10).forEach(([name,score],i)=>{
+    const pct=Math.round(score/maxS*100);
+    html+=`<li class="rank-item">
+      <span class="rank-num${i<3?' top':''}">${i+1}</span>
+      <span class="rank-name">${name}</span>
+      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
+      <span class="rank-score">${score}</span>
+    </li>`;
+  });
+  document.getElementById("my-rank-list").innerHTML=html;
+  submitScores(scores);
+  loadGlobal();
+}
+
+async function submitScores(sc){
+  try{
+    await fetch(GAS_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({scores:Object.entries(sc).map(([name,score])=>({name,score}))})});
+  }catch(e){}
+}
+
+async function fetchRankHtml(){
+  try{
+    const res=await fetch(GAS_URL+"?t="+Date.now());
+    const data=await res.json();
+    if(!data||!data.length)return'<div class="loading-text">아직 집계 데이터가 없습니다</div>';
+    const sorted=[...data].sort((a,b)=>b.score-a.score);
+    const maxS=sorted[0]?.score||1;
+    let html='<ul class="rank-list">';
+    sorted.forEach((item,i)=>{
+      const pct=Math.round(item.score/maxS*100);
+      html+=`<li class="rank-item">
+        <span class="rank-num${i<3?' top':''}">${i+1}</span>
+        <span class="rank-name">${item.name}</span>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
+        <span class="rank-score">${Number(item.score).toLocaleString()}</span>
+      </li>`;
+    });
+    return html+'</ul>';
+  }catch(e){return'<div class="loading-text">불러오기 실패. 새로고침을 눌러주세요.</div>';}
+}
+
+async function loadGlobal(){
+  const el=document.getElementById("global-rank-area");
+  el.innerHTML='<div class="loading-text">집계 불러오는 중…</div>';
+  el.innerHTML=await fetchRankHtml();
+}
+async function loadRankingOnly(){
+  const el=document.getElementById("ranking-only-area");
+  el.innerHTML='<div class="loading-text">집계 불러오는 중…</div>';
+  el.innerHTML=await fetchRankHtml();
+}
+function retry(){ startGame(); }
+</script>
+</body>
+</html>
